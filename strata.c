@@ -3,6 +3,6 @@
 
 int main(int argc, char **argv)
 {
-    neorebuild("neo.c", argv);
+    neorebuild("neo.c", argv, &argc);
     return EXIT_SUCCESS;
 }

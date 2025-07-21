@@ -1,6 +1,6 @@
-# neobuild: A Lightweight C Build System
+# strata: A Build System for C/C++
 
-neobuild is a flexible and lightweight build system for C projects, designed to simplify compilation processes and provide a clean interface for managing builds.
+**strata** is a lightweight build system for C/C++ projects, designed to simplify compilation processes and provide a clean interface for managing builds.
 
 Currently supports only POSIX-compliant systems including Linux
 
