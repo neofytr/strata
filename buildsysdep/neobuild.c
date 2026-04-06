@@ -12,8 +12,10 @@
 #include <signal.h>
 #include <fcntl.h>
 
+/* macOS: sysctlbyname is in sys/types.h + sys/sysctl.h but sysctl.h
+   conflicts with _POSIX_C_SOURCE due to BSD types. Just declare it. */
 #ifdef __APPLE__
-#include <sys/sysctl.h>
+extern int sysctlbyname(const char *, void *, size_t *, void *, size_t);
 #endif
 
 /* ════════════════════════════════════════════════════════════════
@@ -429,10 +431,9 @@ void neo_set_jobs(int n)
 {
     if (n <= 0) {
 #if defined(__APPLE__)
-        int mib[2] = {CTL_HW, HW_NCPU};
         int ncpu = 1;
         size_t len = sizeof(ncpu);
-        sysctl(mib, 2, &ncpu, &len, NULL, 0);
+        sysctlbyname("hw.ncpu", &ncpu, &len, NULL, 0);
         n = ncpu;
 #elif defined(_SC_NPROCESSORS_ONLN)
         n = (int)sysconf(_SC_NPROCESSORS_ONLN);
