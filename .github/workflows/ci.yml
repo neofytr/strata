@@ -29,33 +29,29 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ${{ matrix.cc }} pkg-config zlib1g-dev
 
-      - name: Compile strata object
-        run: |
-          $CC -c buildsysdep/neobuild.c -o buildsysdep/neobuild.o \
-            -Wall -Wextra -Werror -std=c11 \
-            -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE
+      - name: Build
+        run: make build
 
       - name: Run test suite
-        run: bash tests/run_tests.sh
+        run: make test
 
   build-macos:
     name: Build & Test (macOS)
     runs-on: macos-latest
+    env:
+      CC: cc
     steps:
       - uses: actions/checkout@v4
 
       - name: Install dependencies
         run: brew install pkg-config zlib
 
-      - name: Compile strata object
-        run: |
-          cc -c buildsysdep/neobuild.c -o buildsysdep/neobuild.o \
-            -Wall -Wextra -std=c11 \
-            -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE
+      - name: Build
+        run: make CFLAGS="-Wall -Wextra -std=c11" build
 
       - name: Run test suite
         continue-on-error: true
-        run: bash tests/run_tests.sh
+        run: make test
 
   lint:
     name: Lint
@@ -73,13 +69,10 @@ jobs:
           cppcheck --enable=warning,style,performance \
             --suppress=missingIncludeSystem \
             --error-exitcode=1 \
-            buildsysdep/neobuild.c || true
+            buildsysdep/neo_*.c || true
 
-      - name: Verify -Wall -Wextra -Werror clean build
-        run: |
-          gcc -c buildsysdep/neobuild.c -o buildsysdep/neobuild.o \
-            -Wall -Wextra -Werror -std=c11 \
-            -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE
+      - name: Verify clean build
+        run: make build
 
   docs:
     name: Deploy Docs
