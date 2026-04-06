@@ -12,6 +12,10 @@
 #include <signal.h>
 #include <fcntl.h>
 
+#ifdef __APPLE__
+#include <sys/sysctl.h>
+#endif
+
 /* ════════════════════════════════════════════════════════════════
  *  Global State
  * ════════════════════════════════════════════════════════════════ */
@@ -423,7 +427,19 @@ void neo_set_build_dir(const char *dir)
 
 void neo_set_jobs(int n)
 {
-    if (n <= 0) n = (int)sysconf(_SC_NPROCESSORS_ONLN);
+    if (n <= 0) {
+#if defined(__APPLE__)
+        int mib[2] = {CTL_HW, HW_NCPU};
+        int ncpu = 1;
+        size_t len = sizeof(ncpu);
+        sysctl(mib, 2, &ncpu, &len, NULL, 0);
+        n = ncpu;
+#elif defined(_SC_NPROCESSORS_ONLN)
+        n = (int)sysconf(_SC_NPROCESSORS_ONLN);
+#else
+        n = 1;
+#endif
+    }
     if (n <= 0) n = 1;
     g_max_jobs = n;
 }
@@ -1848,14 +1864,22 @@ void neo_target_use_package(neo_target_t *t, const neo_package_t *pkg)
 
 static bool neo__try_compile(const char *code)
 {
-    char tmpfile[] = "/tmp/neo_probe_XXXXXX.c";
-    int fd = mkstemps(tmpfile, 2);
+    char tmpbase[] = "/tmp/neo_probe_XXXXXX";
+    int fd = mkstemp(tmpbase);
     if (fd < 0) return false;
-    if (write(fd, code, strlen(code)) < 0) { close(fd); unlink(tmpfile); return false; }
     close(fd);
 
+    char tmpfile[PATH_MAX];
+    snprintf(tmpfile, sizeof(tmpfile), "%s.c", tmpbase);
+    rename(tmpbase, tmpfile);
+
+    FILE *f = fopen(tmpfile, "w");
+    if (!f) { unlink(tmpfile); return false; }
+    fputs(code, f);
+    fclose(f);
+
     char obj[PATH_MAX];
-    snprintf(obj, sizeof(obj), "%.*s.o", (int)(strlen(tmpfile) - 2), tmpfile);
+    snprintf(obj, sizeof(obj), "%s.o", tmpbase);
 
     const char *argv[] = {"cc", "-c", tmpfile, "-o", obj, "-w", NULL};
     neo_process_t proc = neo__spawn(argv);
@@ -1868,14 +1892,22 @@ static bool neo__try_compile(const char *code)
 
 static bool neo__try_link(const char *code, const char *lib_flag)
 {
-    char tmpfile[] = "/tmp/neo_probe_XXXXXX.c";
-    int fd = mkstemps(tmpfile, 2);
+    char tmpbase[] = "/tmp/neo_probe_XXXXXX";
+    int fd = mkstemp(tmpbase);
     if (fd < 0) return false;
-    if (write(fd, code, strlen(code)) < 0) { close(fd); unlink(tmpfile); return false; }
     close(fd);
 
+    char tmpfile[PATH_MAX];
+    snprintf(tmpfile, sizeof(tmpfile), "%s.c", tmpbase);
+    rename(tmpbase, tmpfile);
+
+    FILE *f = fopen(tmpfile, "w");
+    if (!f) { unlink(tmpfile); return false; }
+    fputs(code, f);
+    fclose(f);
+
     char outfile[PATH_MAX];
-    snprintf(outfile, sizeof(outfile), "%.*s", (int)(strlen(tmpfile) - 2), tmpfile);
+    snprintf(outfile, sizeof(outfile), "%s", tmpbase);
 
     const char *argv[] = {"cc", tmpfile, "-o", outfile, lib_flag, "-w", NULL};
     neo_process_t proc = neo__spawn(argv);
