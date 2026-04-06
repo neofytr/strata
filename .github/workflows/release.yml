@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+
+      - name: Create release tarball
+        run: |
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          PREFIX="neobuild-${VERSION}"
+          git archive --format=tar.gz --prefix="${PREFIX}/" HEAD \
+            -o "${PREFIX}.tar.gz"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: neobuild-${{ steps.version.outputs.VERSION }}.tar.gz
+          generate_release_notes: true

@@ -769,15 +769,20 @@ __attribute__((unused))
 static bool neo__builddb_save(neo_builddb_t *db)
 {
     if (!db || !db->dirty) return true;
-    char tmp[PATH_MAX];
-    snprintf(tmp, sizeof(tmp), "%s.tmp", db->path);
+    size_t plen = strlen(db->path);
+    char *tmp = (char *)malloc(plen + 5);
+    if (!tmp) return false;
+    memcpy(tmp, db->path, plen);
+    memcpy(tmp + plen, ".tmp", 5);
     FILE *f = fopen(tmp, "wb");
-    if (!f) return false;
+    if (!f) { free(tmp); return false; }
     neo_builddb_header_t hdr = {NEO_BUILDDB_MAGIC, NEO_BUILDDB_VERSION, (uint32_t)db->count};
     fwrite(&hdr, sizeof(hdr), 1, f);
     fwrite(db->entries, sizeof(neo_builddb_entry_t), db->count, f);
     fclose(f);
-    return rename(tmp, db->path) == 0;
+    bool ok = rename(tmp, db->path) == 0;
+    free(tmp);
+    return ok;
 }
 
 __attribute__((unused))
