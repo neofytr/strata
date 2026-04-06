@@ -50,7 +50,7 @@ neocompiler_t cc = neo_get_global_default_compiler(); // NEO_GCC
 
 ### `neo_set_verbosity`
 
-> Control how much output neobuild produces.
+> Control how much output strata produces.
 
 ```c
 void neo_set_verbosity(neoverbosity_t v);

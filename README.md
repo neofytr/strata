@@ -1,4 +1,4 @@
-# neobuild
+# strata
 
 **Write your build logic in C. No DSL. No YAML. No Makefiles.**
 
@@ -7,18 +7,18 @@
 
 ## Overview
 
-neobuild is a build system where your build file is a plain C program. You `#include` a single header, call the API to describe compilations, link steps, and dependency graphs, and the build system handles incremental rebuilds, parallel compilation, header dependency tracking, and more.
+strata is a build system where your build file is a plain C program. You `#include` a single header, call the API to describe compilations, link steps, and dependency graphs, and the build system handles incremental rebuilds, parallel compilation, header dependency tracking, and more.
 
-The key idea: if you already know C, you already know how to use neobuild. No new language to learn. Full control via real code -- conditionals, loops, platform checks -- all with zero magic.
+The key idea: if you already know C, you already know how to use strata. No new language to learn. Full control via real code -- conditionals, loops, platform checks -- all with zero magic.
 
 ## Installation
 
 ```bash
-git clone https://github.com/neofytr/neobuild.git
-cd neobuild
+git clone https://github.com/neofytr/strata.git
+cd strata
 ```
 
-The repository contains `strata`, a pre-built bootstrapper binary. You write a C file (e.g. `neo.c`) that includes the neobuild header, then run `./strata` to compile and execute it.
+The repository contains `strata`, a pre-built bootstrapper binary. You write a C file (e.g. `neo.c`) that includes the strata header, then run `./strata` to compile and execute it.
 
 ## Quick Start
 
@@ -49,11 +49,11 @@ On subsequent runs, `strata` detects changes to `neo.c` and recompiles the build
 
 ## Core Concepts
 
-**Build graph** -- Create a `neo_graph_t`, add targets (executables, libraries, custom commands), declare dependencies between them, then call `neo_graph_build()`. neobuild topologically sorts the graph and builds in parallel.
+**Build graph** -- Create a `neo_graph_t`, add targets (executables, libraries, custom commands), declare dependencies between them, then call `neo_graph_build()`. strata topologically sorts the graph and builds in parallel.
 
 **Targets** -- Each target has a type (`NEO_TARGET_EXECUTABLE`, `NEO_TARGET_STATIC_LIB`, `NEO_TARGET_SHARED_LIB`, `NEO_TARGET_OBJECT`, `NEO_TARGET_CUSTOM`), a set of source files, compiler/linker flags, and optional dependencies on other targets.
 
-**Incremental rebuilds** -- neobuild tracks header dependencies via the compiler's `-MMD` flag and skips recompilation when sources and headers are unchanged. Enable `neo_graph_enable_content_hash()` for hash-based (rather than timestamp-based) change detection.
+**Incremental rebuilds** -- strata tracks header dependencies via the compiler's `-MMD` flag and skips recompilation when sources and headers are unchanged. Enable `neo_graph_enable_content_hash()` for hash-based (rather than timestamp-based) change detection.
 
 **Build profiles** -- `NEO_PROFILE_DEBUG`, `NEO_PROFILE_RELEASE`, `NEO_PROFILE_RELDBG` automatically inject appropriate optimization and debug flags.
 
@@ -321,7 +321,7 @@ neoconfig_t *acfg = neo_parse_config_arg(argv, &len);
 
 ### Self-Rebuild
 
-Place this at the top of your `main()`. If the build file (`neo.c`) has been modified, neobuild recompiles and re-executes it automatically:
+Place this at the top of your `main()`. If the build file (`neo.c`) has been modified, strata recompiles and re-executes it automatically:
 
 ```c
 int main(int argc, char **argv)

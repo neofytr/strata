@@ -22,12 +22,12 @@ jobs:
       - name: Create release tarball
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
-          PREFIX="neobuild-${VERSION}"
+          PREFIX="strata-${VERSION}"
           git archive --format=tar.gz --prefix="${PREFIX}/" HEAD \
             -o "${PREFIX}.tar.gz"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: neobuild-${{ steps.version.outputs.VERSION }}.tar.gz
+          files: strata-${{ steps.version.outputs.VERSION }}.tar.gz
           generate_release_notes: true

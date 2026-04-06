@@ -1,12 +1,12 @@
-# neobuild
+# strata
 
 > Write your build logic in C. No DSL. No YAML. No Makefiles.
 
-neobuild is a build system where your build file is a plain C program. You `#include` a single header, call the API to describe compilations, link steps, and dependency graphs, and the build system handles the rest.
+strata is a build system where your build file is a plain C program. You `#include` a single header, call the API to describe compilations, link steps, and dependency graphs, and the build system handles the rest.
 
 ## Key Features
 
-- **Pure C build files** -- if you know C, you know neobuild. No new language to learn.
+- **Pure C build files** -- if you know C, you know strata. No new language to learn.
 - **Target graph** with automatic topological sorting and parallel builds.
 - **Incremental rebuilds** via timestamp tracking or content hashing.
 - **Header dependency tracking** -- changes to included headers trigger recompilation.
@@ -23,11 +23,11 @@ neobuild is a build system where your build file is a plain C program. You `#inc
 ## Quick Install
 
 ```bash
-git clone https://github.com/neofytr/neobuild.git
-cd neobuild
+git clone https://github.com/neofytr/strata.git
+cd strata
 ```
 
-The repository includes `strata`, a pre-built bootstrapper binary. Write a C build file, run `./strata`, and you are building.
+The repository includes `strata`, a pre-built bootstrapper. Write a C build file, run `./strata`, and you are building.
 
 ```c
 #include "buildsysdep/neobuild.h"

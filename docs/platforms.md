@@ -4,7 +4,7 @@
 
 **Status: Full support**
 
-Linux is the primary development platform for neobuild. All features are fully supported and tested:
+Linux is the primary development platform for strata. All features are fully supported and tested:
 
 - GCC and Clang compilers
 - Parallel compilation via `fork()`
@@ -26,7 +26,7 @@ Tested on:
 ### Requirements
 
 - GCC 9+ or Clang 10+
-- GNU Make (only for building neobuild itself, not required for user projects)
+- GNU Make (only for building strata itself, not required for user projects)
 - `pkg-config` (optional, for package detection)
 
 ---
@@ -72,5 +72,5 @@ Windows support is planned for a future release. The current codebase relies on 
 
 ### Current Workarounds
 
-- **WSL (Windows Subsystem for Linux):** neobuild works fully under WSL2 since it provides a complete Linux environment.
+- **WSL (Windows Subsystem for Linux):** strata works fully under WSL2 since it provides a complete Linux environment.
 - **MSYS2/MinGW:** May work with modifications but is not officially tested.

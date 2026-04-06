@@ -11,15 +11,15 @@
 Clone the repository:
 
 ```bash
-git clone https://github.com/neofytr/neobuild.git
-cd neobuild
+git clone https://github.com/neofytr/strata.git
+cd strata
 ```
 
 The repository ships with `strata`, a pre-built bootstrapper. No separate installation step is needed -- `strata` compiles your build file and runs it.
 
 ## The Bootstrapper: strata
 
-`strata` is the entry point. It looks for a file called `neo.c` in the current directory, compiles it against the neobuild library, and executes the resulting binary. On subsequent runs, it detects changes to `neo.c` and recompiles automatically.
+`strata` is the entry point. It looks for a file called `neo.c` in the current directory, compiles it against the strata library, and executes the resulting binary. On subsequent runs, it detects changes to `neo.c` and recompiles automatically.
 
 ```bash
 ./strata           # compile and run neo.c
@@ -57,7 +57,7 @@ Create `hello.c`:
 
 int main(void)
 {
-    printf("Hello from neobuild!\n");
+    printf("Hello from strata!\n");
     return 0;
 }
 ```
@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 }
 ```
 
-neobuild topologically sorts the graph and builds targets in the correct order, running independent compilations in parallel.
+strata topologically sorts the graph and builds targets in the correct order, running independent compilations in parallel.
 
 ## Next Steps
 

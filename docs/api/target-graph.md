@@ -1,6 +1,6 @@
 # Target Graph
 
-The target graph API is the recommended way to describe builds with multiple targets and inter-target dependencies. neobuild topologically sorts the graph and builds targets in the correct order, running independent compilations in parallel.
+The target graph API is the recommended way to describe builds with multiple targets and inter-target dependencies. strata topologically sorts the graph and builds targets in the correct order, running independent compilations in parallel.
 
 ## Types
 

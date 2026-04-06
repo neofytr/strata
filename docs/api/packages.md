@@ -1,6 +1,6 @@
 # Packages
 
-neobuild provides functions to detect system packages via `pkg-config`, probe for headers and libraries, apply package flags to targets, and generate `.pc` files for your own libraries.
+strata provides functions to detect system packages via `pkg-config`, probe for headers and libraries, apply package flags to targets, and generate `.pc` files for your own libraries.
 
 ## Types
 

@@ -1,6 +1,6 @@
 # Test Runner
 
-neobuild includes a built-in test runner for executing test binaries, collecting results, and reporting pass/fail status.
+strata includes a built-in test runner for executing test binaries, collecting results, and reporting pass/fail status.
 
 ## Types
 
@@ -137,7 +137,7 @@ neo_test_suite_destroy(suite);
 ## Complete Test Runner Example
 
 ```c
-#include "buildsysdep/neobuild.h"
+#include "buildsysdep/strata.h"
 
 int main(int argc, char **argv)
 {

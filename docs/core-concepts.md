@@ -2,9 +2,9 @@
 
 ## Build Graph
 
-At the heart of neobuild is a directed acyclic graph (DAG) of build targets. You create a graph with `neo_graph_create()`, add targets (executables, libraries, custom commands), declare dependencies between them, and call `neo_graph_build()`.
+At the heart of strata is a directed acyclic graph (DAG) of build targets. You create a graph with `neo_graph_create()`, add targets (executables, libraries, custom commands), declare dependencies between them, and call `neo_graph_build()`.
 
-neobuild topologically sorts the graph and builds targets in dependency order. Independent targets are built in parallel, respecting the job limit set by `neo_set_jobs()`.
+strata topologically sorts the graph and builds targets in dependency order. Independent targets are built in parallel, respecting the job limit set by `neo_set_jobs()`.
 
 ```
 libparser.a ──┐
@@ -30,15 +30,15 @@ Each target has:
 - **Include directories** -- added as `-I` flags.
 - **Dependencies** -- other targets that must be built first.
 
-When target A depends on target B (via `neo_target_depends_on(A, B)`), neobuild ensures B is built before A. If B is a library, it is automatically linked into A.
+When target A depends on target B (via `neo_target_depends_on(A, B)`), strata ensures B is built before A. If B is a library, it is automatically linked into A.
 
 ## Incremental Rebuilds
 
-neobuild avoids unnecessary work by tracking what has changed since the last build.
+strata avoids unnecessary work by tracking what has changed since the last build.
 
 ### Timestamp-Based (Default)
 
-By default, neobuild compares modification timestamps of source files, header dependencies, and output files. If a source file or any header it includes is newer than the corresponding object file, that source is recompiled.
+By default, strata compares modification timestamps of source files, header dependencies, and output files. If a source file or any header it includes is newer than the corresponding object file, that source is recompiled.
 
 Header dependencies are tracked using the compiler's `-MMD` flag, which generates `.d` dependency files alongside object files.
 
@@ -50,7 +50,7 @@ Enable content hashing for more accurate change detection:
 neo_graph_enable_content_hash(g);
 ```
 
-With content hashing, neobuild computes a hash of each source file's contents. A file is recompiled only if its content has actually changed, not merely because its timestamp was updated (e.g., by `touch` or a version control checkout).
+With content hashing, strata computes a hash of each source file's contents. A file is recompiled only if its content has actually changed, not merely because its timestamp was updated (e.g., by `touch` or a version control checkout).
 
 The hash database is stored alongside the build artifacts.
 
@@ -75,7 +75,7 @@ Profile flags are prepended to any per-target flags, so you can still add additi
 
 ## Parallel Compilation
 
-neobuild compiles independent source files in parallel using `fork()`. Control the degree of parallelism with:
+strata compiles independent source files in parallel using `fork()`. Control the degree of parallelism with:
 
 ```c
 neo_set_jobs(8);  // up to 8 parallel compilations
@@ -87,9 +87,9 @@ The low-level `neo_compile_parallel()` function also supports parallel compilati
 
 ## The Strata Bootstrap
 
-`strata` is the bootstrapper binary included in the neobuild repository. Its job is simple:
+`strata` is the bootstrapper binary included in the strata repository. Its job is simple:
 
-1. Compile your build file (`neo.c`) against the neobuild library.
+1. Compile your build file (`neo.c`) against the strata library.
 2. Execute the resulting binary.
 
 On subsequent runs, `strata` checks whether `neo.c` has been modified and recompiles it if needed.
@@ -114,7 +114,7 @@ All generated `.o` files, `.d` dependency files, libraries, and executables will
 
 ## Compiler Selection
 
-neobuild supports several compilers:
+strata supports several compilers:
 
 | Enum Value | Compiler |
 |------------|----------|
