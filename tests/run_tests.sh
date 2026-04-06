@@ -11,8 +11,7 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
 CC="${CC:-gcc}"
-NEOBUILD_SRC="buildsysdep/neobuild.c"
-NEOBUILD_OBJ="buildsysdep/neobuild.o"
+SRCDIR="buildsysdep"
 TEST_DIR="tests"
 BIN_DIR="/tmp/neo_test_bins"
 
@@ -27,14 +26,20 @@ echo ""
 # Create output directory for test binaries
 mkdir -p "$BIN_DIR"
 
-# Compile neobuild.o if needed or if source is newer
-if [ ! -f "$NEOBUILD_OBJ" ] || [ "$NEOBUILD_SRC" -nt "$NEOBUILD_OBJ" ]; then
-    echo "[BUILD] Compiling $NEOBUILD_SRC ..."
-    $CC -c "$NEOBUILD_SRC" -o "$NEOBUILD_OBJ" -Wall -Wextra -std=c11 -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE
-    echo "[BUILD] Done."
-else
-    echo "[BUILD] $NEOBUILD_OBJ is up to date."
-fi
+# Compile all neo_*.c files if needed
+NEOBUILD_OBJS=""
+NEO_SRCS="neo_core neo_arena neo_platform neo_command neo_deps neo_compile neo_graph neo_toolchain neo_detect neo_install neo_test_runner neo_config"
+
+for src in $NEO_SRCS; do
+    SRC_FILE="$SRCDIR/${src}.c"
+    OBJ_FILE="$SRCDIR/${src}.o"
+    if [ ! -f "$OBJ_FILE" ] || [ "$SRC_FILE" -nt "$OBJ_FILE" ] || [ "$SRCDIR/neo_internal.h" -nt "$OBJ_FILE" ] || [ "$SRCDIR/neobuild.h" -nt "$OBJ_FILE" ]; then
+        echo "[BUILD] Compiling $SRC_FILE ..."
+        $CC -c "$SRC_FILE" -o "$OBJ_FILE" -Wall -Wextra -std=c11 -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE
+    fi
+    NEOBUILD_OBJS="$NEOBUILD_OBJS $OBJ_FILE"
+done
+echo "[BUILD] Done."
 echo ""
 
 # Collect all test source files
@@ -55,7 +60,7 @@ for TEST_SRC in $TEST_FILES; do
     echo "[COMPILE] $TEST_SRC"
 
     # Compilation must succeed
-    $CC -o "$TEST_BIN" "$TEST_SRC" "$NEOBUILD_OBJ" \
+    $CC -o "$TEST_BIN" "$TEST_SRC" $NEOBUILD_OBJS \
         -Wall -Wextra -std=c11 -D_POSIX_C_SOURCE=200809L -D_GNU_SOURCE \
         -I"$PROJECT_ROOT" -I"$PROJECT_ROOT/$TEST_DIR" -lm 2>&1
     if [ $? -ne 0 ]; then

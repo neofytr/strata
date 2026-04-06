@@ -46,20 +46,29 @@ fi
 
 echo "using compiler: $CC"
 
-NEOBUILD_SRC="buildsysdep/neobuild.c"
-NEOBUILD_OBJ="buildsysdep/neobuild.o"
+SRCS="neo_core neo_arena neo_platform neo_command neo_deps neo_compile neo_graph neo_toolchain neo_detect neo_install neo_test_runner neo_config"
 
-if [ ! -f "$NEOBUILD_OBJ" ] || [ "$NEOBUILD_SRC" -nt "$NEOBUILD_OBJ" ]; then
-    echo "compiling neobuild.o"
-    $CC -c "$NEOBUILD_SRC" -o "$NEOBUILD_OBJ" -O3 -march=native
-    if [ $? -ne 0 ]; then
-        echo "failed to compile neobuild.o"
-        exit 1
+for src in $SRCS; do
+    SRC_FILE="buildsysdep/${src}.c"
+    OBJ_FILE="buildsysdep/${src}.o"
+    if [ ! -f "$OBJ_FILE" ] || [ "$SRC_FILE" -nt "$OBJ_FILE" ] || [ "buildsysdep/neo_internal.h" -nt "$OBJ_FILE" ] || [ "buildsysdep/neobuild.h" -nt "$OBJ_FILE" ]; then
+        echo "compiling ${src}.o"
+        $CC -c "$SRC_FILE" -o "$OBJ_FILE" -O3 -march=native
+        if [ $? -ne 0 ]; then
+            echo "failed to compile ${src}.o"
+            exit 1
+        fi
     fi
-fi
+done
+
+# Then link user's file with all .o files
+ALL_OBJS=""
+for src in $SRCS; do
+    ALL_OBJS="$ALL_OBJS buildsysdep/${src}.o"
+done
 
 echo "compiling $SOURCE_FILE"
-$CC "$SOURCE_FILE" "$NEOBUILD_OBJ" -o "$OUTPUT_FILE" -lm -O3 -march=native
+$CC "$SOURCE_FILE" $ALL_OBJS -o "$OUTPUT_FILE" -lm -O3 -march=native
 
 if [ $? -eq 0 ]; then
     echo "compilation successful: $OUTPUT_FILE"
