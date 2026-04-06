@@ -127,7 +127,7 @@ int neo_compile_parallel(neocompiler_t compiler, const char **sources,
     neo_link_null((compiler), (executable), (linker_flags), (forced), __VA_ARGS__, NULL)
 
 bool neo_link_null(neocompiler_t compiler, const char *executable,
-    const char *linker_flags, bool forced_linking, ...);
+    const char *linker_flags, int forced_linking, ...);
 
 /* ── Library Building ───────────────────────────────────────────── */
 bool neo_build_static_lib(neocompiler_t compiler, const char *name,

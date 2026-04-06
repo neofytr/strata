@@ -1,0 +1,31 @@
+# Build artifacts
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+
+# Neobuild build database
+.neobuild/
+
+# Claude Code
+.claude/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Compiled test binaries
+/tests/fixtures/test_pass
+/tests/fixtures/test_fail
+/tests/fixtures/test_crash
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Compiled strata binary (the script is the real one)
+/strata.o

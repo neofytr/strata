@@ -1137,7 +1137,7 @@ bool neo_build_shared_lib(neocompiler_t compiler, const char *name,
  * ════════════════════════════════════════════════════════════════ */
 
 bool neo_link_null(neocompiler_t compiler, const char *executable,
-    const char *linker_flags, bool forced_linking, ...)
+    const char *linker_flags, int forced_linking, ...)
 {
     if (!executable) { NEO_LOGF(NEO_LOG_ERROR, "No executable name"); return false; }
 
