@@ -1,312 +1,304 @@
 #ifndef NEOBUILD_H
 #define NEOBUILD_H
 
-#include "dynarr/inc/dynarr.h"
 #include <stdint.h>
 #include <stdarg.h>
 #include <stdlib.h>
-
-// for pid_t and mode_t
+#include <stdbool.h>
 #include <sys/types.h>
-
 #include <stdio.h>
 
-/**
- * Enum representing different compiler types that can be used.
- */
+#include "neovec/neovec.h"
+
+/* ── Platform Detection ─────────────────────────────────────────── */
+#if defined(__APPLE__) && defined(__MACH__)
+  #define NEO_PLATFORM_MACOS 1
+#elif defined(__linux__)
+  #define NEO_PLATFORM_LINUX 1
+#endif
+
+/* ── Compiler Types ─────────────────────────────────────────────── */
 typedef enum
 {
-    LD,             // the GNU linker
-    AS,             // the GNU assembler
-    GCC,            /**< GNU Compiler Collection */
-    CLANG,          /**< Clang compiler */
-    GLOBAL_DEFAULT, /**< Use the globally set default compiler */
+    NEO_LD,
+    NEO_AS,
+    NEO_GCC,
+    NEO_CLANG,
+    NEO_GPP,
+    NEO_CLANGPP,
+    NEO_GLOBAL_DEFAULT,
 } neocompiler_t;
 
-/**
- * Sets the global default compiler to be used when GLOBAL_DEFAULT is specified.
- *
- * @param compiler The compiler type to set as the global default.
- */
-void neo_set_global_default_compiler(neocompiler_t compiler);
-
-/**
- * Gets the current global default compiler setting.
- *
- * @return The currently set global default compiler.
- */
-neocompiler_t neo_get_global_default_compiler();
-
-/**
- * Enum representing different logging levels for the neo build system.
- */
+/* ── Log Levels ─────────────────────────────────────────────────── */
 typedef enum
 {
-    ERROR,   /**< Error level for critical issues */
-    WARNING, /**< Warning level for potential issues */
-    INFO,    /**< Info level for general information */
-    DEBUG    /**< Debug level for detailed debugging information */
+    NEO_LOG_ERROR,
+    NEO_LOG_WARNING,
+    NEO_LOG_INFO,
+    NEO_LOG_DEBUG,
 } neolog_level_t;
 
-/**
- * Structure representing a key-value configuration pair.
- */
-typedef struct
-{
-    char *key;   /**< Configuration key */
-    char *value; /**< Configuration value */
-} neoconfig_t;
-
-/**
- * Macro for logging messages with the specified log level.
- *
- * @param level The log level for the message (ERROR, WARNING, INFO, or DEBUG).
- * @param msg The message to log.
- */
-#define NEO_LOG(level, msg)                         \
-    do                                              \
-    {                                               \
-        switch (level)                              \
-        {                                           \
-        case ERROR:                                 \
-            fprintf(stderr, "[ERROR] %s\n", msg);   \
-            break;                                  \
-        case WARNING:                               \
-            fprintf(stderr, "[WARNING] %s\n", msg); \
-            break;                                  \
-        case INFO:                                  \
-            fprintf(stdout, "[INFO] %s\n", msg);    \
-            break;                                  \
-        case DEBUG:                                 \
-            fprintf(stdout, "[DEBUG] %s\n", msg);   \
-            break;                                  \
-        default:                                    \
-            fprintf(stdout, "[UNKNOWN] %s\n", msg); \
-            break;                                  \
-        }                                           \
-    } while (0)
-
-// check if the neo.c build C file has changed since the previous compilation of it to neo
-// (done by checking the modified date/time of neo.c; if this time comes after the last modified of neo.c, we need to rebuild neo from this new neo.c)
-
-// buildneo, build.c and build should be in the same directory
-bool neorebuild(const char *build_file, char **argv, int *argc);
-
-/**
- * Enum representing different shell types.
- */
+/* ── Verbosity ──────────────────────────────────────────────────── */
 typedef enum
 {
-    DASH, /**< Dash shell */
-    BASH, /**< Bash shell */
-    SH    /**< Standard shell (sh) */
+    NEO_QUIET,
+    NEO_NORMAL,
+    NEO_VERBOSE,
+} neoverbosity_t;
+
+/* ── Build Profiles ─────────────────────────────────────────────── */
+typedef enum
+{
+    NEO_PROFILE_NONE,
+    NEO_PROFILE_DEBUG,
+    NEO_PROFILE_RELEASE,
+    NEO_PROFILE_RELDBG,
+} neoprofile_t;
+
+/* ── Shell Types ────────────────────────────────────────────────── */
+typedef enum
+{
+    NEO_DASH,
+    NEO_BASH,
+    NEO_SH,
+    NEO_DIRECT,   /* no shell — direct execvp */
 } neoshell_t;
 
-/**
- * Structure representing a command to be executed.
- */
+/* ── Command ────────────────────────────────────────────────────── */
 typedef struct
 {
-    dyn_arr_t *args;  /**< Dynamic array storing command arguments. */
-    neoshell_t shell; /**< Shell type used to execute the command. */
+    vector_t args;
+    neoshell_t shell;
 } neocmd_t;
 
-/**
- * Appends arguments to a command structure.
- *
- * This macro simplifies appending multiple arguments to a `neocmd_t` object.
- * It automatically adds a terminating `NULL` argument.
- *
- * @param neocmd_ptr Pointer to the `neocmd_t` object.
- * @param ... Variable arguments representing the command arguments to append.
- */
-#define neocmd_append(neocmd_ptr, ...) neocmd_append_null((neocmd_ptr), __VA_ARGS__, NULL)
+/* ── Config ─────────────────────────────────────────────────────── */
+typedef struct
+{
+    char *key;
+    char *value;
+} neoconfig_t;
 
-#define neo_link(compiler, executable, linker_flags, forced_linking, ...) neo_link_null((compiler), (executable), (linker_flags), (forced_linking), __VA_ARGS__, NULL)
+/* ── Arena Allocator ────────────────────────────────────────────── */
+typedef struct neo_arena neo_arena_t;
 
-/**
- * Generates a string representation of a label, ensuring compatibility with filenames containing whitespaces.
- *
- * @param label The label to be converted to a string.
- * @return String literal representation of the label.
- */
-#define LABEL_WITH_SPACES(label) #label
+neo_arena_t *neo_arena_create(size_t page_size);
+void        *neo_arena_alloc(neo_arena_t *a, size_t size);
+char        *neo_arena_strdup(neo_arena_t *a, const char *s);
+char        *neo_arena_sprintf(neo_arena_t *a, const char *fmt, ...)
+              __attribute__((format(printf, 2, 3)));
+void         neo_arena_destroy(neo_arena_t *a);
 
-/**
- * Creates a new command structure.
- *
- * @param shell The shell type to be used for executing the command.
- * @return Pointer to a newly allocated `neocmd_t` structure.
- */
+/* ── Formatted Logging ──────────────────────────────────────────── */
+#define NEO_LOGF(level, fmt, ...) \
+    neo__logf((level), (fmt), ##__VA_ARGS__)
+
+void neo__logf(neolog_level_t level, const char *fmt, ...)
+    __attribute__((format(printf, 2, 3)));
+
+/* ── Global Settings ────────────────────────────────────────────── */
+void neo_set_global_default_compiler(neocompiler_t compiler);
+neocompiler_t neo_get_global_default_compiler(void);
+void neo_set_verbosity(neoverbosity_t v);
+void neo_set_dry_run(bool enabled);
+void neo_set_build_dir(const char *dir);
+void neo_set_profile(neoprofile_t profile);
+void neo_set_jobs(int n);
+
+/* ── Command API ────────────────────────────────────────────────── */
 neocmd_t *neocmd_create(neoshell_t shell);
-
-/**
- * Deletes a command structure and frees allocated resources.
- *
- * @param neocmd Pointer to the `neocmd_t` object to be deleted.
- * @return true if the command was successfully deleted, false otherwise.
- */
 bool neocmd_delete(neocmd_t *neocmd);
-
-/*
- * This function runs a command asynchronously by forking a child process.
- *
- * - The child process will execute independently and will not be waited for within this function.
- * - The parent must explicitly call waitpid(pid) later to retrieve the exit status.
- * - If the parent process exits before the child, the child process will be reparented to init (PID 1),
- *   which will eventually clean it up.
- * - If the parent does not call waitpid(), the child remains in a "zombie" state after termination.
- *   - A zombie process retains only its PID and exit status in the process table.
- *   - It no longer executes or consumes memory, but it persists until the parent calls waitpid().
- *   - If the parent itself terminates, init adopts the zombie process and clears it.
- * - All process resources (memory, file descriptors, etc.) are freed upon child exit,
- *   except for the exit status, which remains in the process table until reaped.
- */
-
-/**
- * Runs a command asynchronously.
- *
- * This function forks a new process to execute the command in the background.
- *
- * @param neocmd Pointer to the command structure to be executed.
- * @return The process ID (`pid_t`) of the child process if successful, or `-1` on failure.
- */
 pid_t neocmd_run_async(neocmd_t *neocmd);
-
-/**
- * Runs the given command synchronously and waits for it to complete.
- *
- * @param neocmd Pointer to the command structure.
- * @param status Pointer to an integer where the process exit status will be stored.
- *               - If the process exits normally, `*status` will hold the exit code (0-255).
- *               - If the process is terminated by a signal, `*status` will hold the signal number.
- * @param code Pointer to an integer where the termination reason will be stored.
- *             - It will be set to one of the `si_code` values (e.g., `CLD_EXITED`, `CLD_KILLED`, `CLD_DUMPED`, etc.).
- * @param print_status_desc If `true`, prints a description of the termination status.
- *
- * @return `true` if the process was successfully waited on, `false` otherwise.
- */
 bool neocmd_run_sync(neocmd_t *neocmd, int *status, int *code, bool print_status_desc);
-
-/**
- * Waits for a child process to terminate.
- *
- * @param pid The process ID (`pid_t`) of the child process to wait for.
- * @param status Pointer to an integer where the process exit status will be stored.
- *               - If the process exits normally, `*status` will hold the exit code (0-255).
- *               - If the process is terminated by a signal, `*status` will hold the signal number.
- * @param code Pointer to an integer where the termination reason will be stored.
- *             - It will be set to one of the `si_code` values (e.g., `CLD_EXITED`, `CLD_KILLED`, `CLD_DUMPED`, etc.).
- * @param should_print If `true`, prints information about the process termination.
- *
- * @return `true` if the process was successfully waited on, `false` otherwise.
- */
+bool neocmd_append_null(neocmd_t *neocmd, ...);
+const char *neocmd_render(neocmd_t *neocmd);
 bool neoshell_wait(pid_t pid, int *status, int *code, bool should_print);
 
-/**
- * Appends arguments to a command structure.
- *
- * This function allows appending multiple arguments to a command dynamically.
- * The arguments list must be NULL-terminated.
- *
- * @param neocmd Pointer to the `neocmd_t` object.
- * @param ... Variable argument list representing the command arguments.
- * @return `true` if the arguments were successfully appended, `false` otherwise.
- */
-bool neocmd_append_null(neocmd_t *neocmd, ...);
+#define neocmd_append(neocmd_ptr, ...) \
+    neocmd_append_null((neocmd_ptr), __VA_ARGS__, NULL)
 
-/**
- * Generates a string representation of the command.
- *
- * This function converts a `neocmd_t` object into a formatted string representation.
- * The caller is responsible for freeing the returned string using `free()`.
- *
- * @param neocmd Pointer to the command structure.
- * @return A dynamically allocated string containing the command representation.
- */
-const char *neocmd_render(neocmd_t *neocmd);
+/* ── Compilation / Linking ──────────────────────────────────────── */
+bool neo_compile_to_object_file(neocompiler_t compiler, const char *source,
+    const char *output, const char *compiler_flags, bool force_compilation);
 
-/**
- * Checks if the build file has changed since the previous compilation and rebuilds if necessary.
- *
- * @param build_file Path to the build file to check.
- * @param argv The command line arguments to pass to the rebuild process.
- * @return true if a rebuild was performed successfully, false otherwise.
- */
-bool neorebuild(const char *build_file, char **argv, int *argc);
+int neo_compile_parallel(neocompiler_t compiler, const char **sources,
+    size_t count, const char *compiler_flags, bool force_compilation);
 
-/**
- * Creates directories recursively (similar to mkdir -p).
- *
- * @param dir_path Path to the directory to create.
- * @param mode Permission mode for the created directories.
- * @return true if directories were created successfully, false otherwise.
- */
+#define neo_link(compiler, executable, linker_flags, forced, ...) \
+    neo_link_null((compiler), (executable), (linker_flags), (forced), __VA_ARGS__, NULL)
+
+bool neo_link_null(neocompiler_t compiler, const char *executable,
+    const char *linker_flags, bool forced_linking, ...);
+
+/* ── Library Building ───────────────────────────────────────────── */
+bool neo_build_static_lib(neocompiler_t compiler, const char *name,
+    const char **sources, size_t nsources, const char *cflags);
+bool neo_build_shared_lib(neocompiler_t compiler, const char *name,
+    const char **sources, size_t nsources, const char *cflags,
+    const char *ldflags);
+
+/* ── Header Dependency Tracking ─────────────────────────────────── */
+bool neo_needs_recompile(const char *source, const char *output);
+
+/* ── compile_commands.json ──────────────────────────────────────── */
+bool neo_export_compile_commands(const char *output_path);
+
+/* ── Target Graph ───────────────────────────────────────────────── */
+typedef enum
+{
+    NEO_TARGET_EXECUTABLE,
+    NEO_TARGET_STATIC_LIB,
+    NEO_TARGET_SHARED_LIB,
+    NEO_TARGET_OBJECT,
+    NEO_TARGET_CUSTOM,
+} neo_target_type_t;
+
+typedef struct neo_target neo_target_t;
+typedef struct neo_graph neo_graph_t;
+
+neo_graph_t  *neo_graph_create(void);
+void          neo_graph_destroy(neo_graph_t *g);
+
+neo_target_t *neo_add_executable(neo_graph_t *g, const char *name,
+                                 const char **sources, size_t nsources);
+neo_target_t *neo_add_static_lib(neo_graph_t *g, const char *name,
+                                 const char **sources, size_t nsources);
+neo_target_t *neo_add_shared_lib(neo_graph_t *g, const char *name,
+                                 const char **sources, size_t nsources);
+neo_target_t *neo_add_custom(neo_graph_t *g, const char *name,
+                             const char *command);
+
+void neo_target_set_compiler(neo_target_t *t, neocompiler_t compiler);
+void neo_target_add_cflags(neo_target_t *t, const char *flags);
+void neo_target_add_ldflags(neo_target_t *t, const char *flags);
+void neo_target_add_include_dir(neo_target_t *t, const char *dir);
+void neo_target_depends_on(neo_target_t *target, neo_target_t *dependency);
+void neo_target_set_version(neo_target_t *t, int major, int minor, int patch);
+
+int  neo_graph_build(neo_graph_t *g);
+int  neo_graph_build_target(neo_graph_t *g, const char *target_name);
+neo_target_t *neo_graph_find(neo_graph_t *g, const char *name);
+
+/* ── Content Hash Database ──────────────────────────────────────── */
+void neo_graph_enable_content_hash(neo_graph_t *g);
+
+/* ── Compiler Cache ─────────────────────────────────────────────── */
+void neo_graph_enable_ccache(neo_graph_t *g);
+
+/* ── Graph Export ───────────────────────────────────────────────── */
+bool neo_graph_export_dot(neo_graph_t *g, const char *output_path);
+
+/* ── Package / Feature Detection ────────────────────────────────── */
+typedef struct
+{
+    char *cflags;
+    char *libs;
+    char *version;
+    bool found;
+} neo_package_t;
+
+neo_package_t neo_find_package(const char *name);
+void          neo_package_free(neo_package_t *pkg);
+
+bool neo_check_header(const char *header);
+bool neo_check_lib(const char *lib);
+bool neo_check_symbol(const char *lib, const char *symbol);
+
+void neo_target_use_package(neo_target_t *t, const neo_package_t *pkg);
+
+bool neo_generate_pkg_config(const char *output_path, const char *name,
+    const char *version, const char *description,
+    const char *cflags, const char *libs);
+
+/* ── Toolchain / Cross-Compilation ──────────────────────────────── */
+typedef struct neo_toolchain neo_toolchain_t;
+
+neo_toolchain_t *neo_toolchain_create(const char *prefix);
+void neo_toolchain_set_sysroot(neo_toolchain_t *tc, const char *sysroot);
+void neo_toolchain_set_cc(neo_toolchain_t *tc, const char *cc);
+void neo_toolchain_set_cxx(neo_toolchain_t *tc, const char *cxx);
+void neo_toolchain_destroy(neo_toolchain_t *tc);
+
+void neo_graph_set_toolchain(neo_graph_t *g, neo_toolchain_t *tc);
+void neo_target_set_toolchain(neo_target_t *t, neo_toolchain_t *tc);
+
+/* ── Install ────────────────────────────────────────────────────── */
+typedef struct
+{
+    char prefix[512];
+    char bindir[512];
+    char libdir[512];
+    char includedir[512];
+    char pkgconfigdir[512];
+} neo_install_dirs_t;
+
+neo_install_dirs_t neo_install_dirs_default(const char *prefix);
+bool neo_install_target(neo_graph_t *g, const char *target_name,
+                        const neo_install_dirs_t *dirs);
+bool neo_install_headers(const char **headers, size_t nheaders,
+                         const char *subdir, const neo_install_dirs_t *dirs);
+
+/* ── Test Runner ────────────────────────────────────────────────── */
+typedef struct neo_test_suite neo_test_suite_t;
+
+typedef struct
+{
+    int total;
+    int passed;
+    int failed;
+    int crashed;
+    int timed_out;
+    double elapsed_ms;
+} neo_test_results_t;
+
+neo_test_suite_t *neo_test_suite_create(const char *name);
+void neo_test_suite_add(neo_test_suite_t *suite, const char *test_name,
+                        const char *command);
+void neo_test_suite_set_timeout(neo_test_suite_t *suite, int seconds);
+neo_test_results_t neo_test_suite_run(neo_test_suite_t *suite);
+void neo_test_suite_destroy(neo_test_suite_t *suite);
+
+/* ── Filesystem / Config ────────────────────────────────────────── */
 bool neo_mkdir(const char *dir_path, mode_t mode);
-
-/**
- * Parses a configuration file into an array of key-value pairs.
- *
- * @param config_file_path Path to the configuration file to parse.
- * @param config_arr_len Pointer to a size_t variable where the length of the resulting array will be stored.
- * @return An array of neoconfig_t structures containing the parsed configuration.
- */
+bool neorebuild(const char *build_file, char **argv, int *argc);
 neoconfig_t *neo_parse_config(const char *config_file_path, size_t *config_arr_len);
-
-/**
- * Frees the memory allocated for a configuration array.
- *
- * @param config_arr The configuration array to free.
- * @param config_arr_len The length of the configuration array.
- * @return true if the memory was successfully freed, false otherwise.
- */
 bool neo_free_config(neoconfig_t *config_arr, size_t config_arr_len);
-
-/**
- * Parses configuration options from command line arguments.
- *
- * @param argv The command line arguments to parse.
- * @param config_arr_len Pointer to a size_t variable where the length of the resulting array will be stored.
- * @return An array of neoconfig_t structures containing the parsed configuration.
- */
 neoconfig_t *neo_parse_config_arg(char **argv, size_t *config_arr_len);
 
-// if output is NULL, the name of the output object file is the same as the source file (with removed .c)
-// and is placed in the same directory and the source file
-// if the compiler flags are NULL, the only compiler flag used is "-c", which specifies compilation to object files
-// will compile only if the output file doesn't exist or if the object file is older than the source file
+#define LABEL_WITH_SPACES(label) #label
 
-/**
- * Compiles a source file to an object file using the specified compiler.
- *
- * @param compiler The compiler to use for compilation.
- * @param source Path to the source file to compile.
- * @param output Path to the output object file (can be NULL to use default naming).
- * @param compiler_flags Additional compiler flags to use (can be NULL to use defaults).
- * @param force_compilation If true, forces compilation even if the object file is newer than the source.
- * @return true if compilation was successful, false otherwise.
- */
-bool neo_compile_to_object_file(neocompiler_t compiler, const char *source, const char *output, const char *compiler_flags, bool force_compilation);
+/* ── Backward Compatibility ─────────────────────────────────────── */
+#ifndef NEO_NO_COMPAT
 
-// links the provided object files with each other and with glibc (always) along with appending the linker flags provided to produce executable
-// the object files are provided to the linker in the order in which they are specified in the function
-// the linker flags are appended at the end in the order they are present in the linker_flags strig
-// the executable parameter is required
-// enabling forced linking prevents timestamp caching and always results in linking
-// disabling it results in linking only if any of the object files are newer than the executable provided (if it exists)
-// if the executable doesn't exist, forced_linking doesn't have any effect
-bool neo_link_null(neocompiler_t compiler, const char *executable, const char *linker_flags, bool forced_linking, ...);
+#define LD          NEO_LD
+#define AS          NEO_AS
+#define GCC         NEO_GCC
+#define CLANG       NEO_CLANG
+#define GLOBAL_DEFAULT NEO_GLOBAL_DEFAULT
 
+#define ERROR       NEO_LOG_ERROR
+#define WARNING     NEO_LOG_WARNING
+#define INFO        NEO_LOG_INFO
+#define DEBUG       NEO_LOG_DEBUG
+
+#define DASH        NEO_DASH
+#define BASH        NEO_BASH
+#define SH          NEO_SH
+
+#define NEO_LOG(level, msg) NEO_LOGF((level), "%s", (msg))
+
+#endif /* NEO_NO_COMPAT */
+
+/* ── Prefix-removal aliases ─────────────────────────────────────── */
 #ifdef NEO_REMOVE_PREFIX
 
-#define cmd_create neocmd_create
-#define cmd_delete neocmd_delete
-#define cmd_run_async neocmd_run_async
-#define cmd_run_sync neocmd_run_sync
-#define cmd_append neocmd_append
+#define cmd_create      neocmd_create
+#define cmd_delete      neocmd_delete
+#define cmd_run_async   neocmd_run_async
+#define cmd_run_sync    neocmd_run_sync
+#define cmd_append      neocmd_append
 #define cmd_append_null neocmd_append_null
-#define cmd_render neocmd_render
-#define shell_wait neoshell_wait
+#define cmd_render      neocmd_render
+#define shell_wait      neoshell_wait
 
 #endif /* NEO_REMOVE_PREFIX */
 

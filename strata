@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# parse command line arguments
+# neobuild bootstrap — compiles your build file with the neobuild library
+
 clean_mode=false
 
 while getopts "c" opt; do
@@ -18,18 +19,13 @@ done
 
 shift $((OPTIND -1))
 
-# if clean mode is active, remove all compiled files
 if [ "$clean_mode" = true ]; then
     echo "cleaning all compiled objects and binaries..."
-    rm -rf buildsysdep/strix/binaries/*
-    rm -rf buildsysdep/dynarr/binaries/*
     rm -f buildsysdep/*.o
-    rm -f buildsysdep/neobuild.o
     echo "clean complete."
     exit 0
 fi
 
-# check if a .c file is provided as an argument when not in clean mode
 if [ "$#" -ne 1 ]; then
     echo "Usage: $0 [-c] [<source_file.c>]"
     echo "  -c: clean all compiled objects and binaries"
@@ -39,7 +35,6 @@ fi
 SOURCE_FILE="$1"
 OUTPUT_FILE="${SOURCE_FILE%.c}"
 
-# determine the c compiler
 if command -v gcc &>/dev/null; then
     CC=gcc
 elif command -v clang &>/dev/null; then
@@ -51,38 +46,6 @@ fi
 
 echo "using compiler: $CC"
 
-# ensure directories exist
-mkdir -p buildsysdep/strix/binaries
-mkdir -p buildsysdep/dynarr/binaries
-mkdir -p buildsysdep
-
-# check and build strix.o if necessary
-STRIX_SRC="buildsysdep/strix/source/main.c"
-STRIX_OBJ="buildsysdep/strix/binaries/strix.o"
-
-if [ ! -f "$STRIX_OBJ" ] || [ "$STRIX_SRC" -nt "$STRIX_OBJ" ]; then
-    echo "compiling strix.o"
-    $CC -c "$STRIX_SRC" -o "$STRIX_OBJ" -O3 -march=native
-    if [ $? -ne 0 ]; then
-        echo "failed to compile strix.o"
-        exit 1
-    fi
-fi
-
-# check and build dynarr.o if necessary
-DYNARR_SRC="buildsysdep/dynarr/src/dynarr.c"
-DYNARR_OBJ="buildsysdep/dynarr/binaries/dynarr.o"
-
-if [ ! -f "$DYNARR_OBJ" ] || [ "$DYNARR_SRC" -nt "$DYNARR_OBJ" ]; then
-    echo "compiling dynarr.o"
-    $CC -c "$DYNARR_SRC" -o "$DYNARR_OBJ" -O3 -march=native
-    if [ $? -ne 0 ]; then
-        echo "failed to compile dynarr.o"
-        exit 1
-    fi
-fi
-
-# check and build neobuild.o if necessary
 NEOBUILD_SRC="buildsysdep/neobuild.c"
 NEOBUILD_OBJ="buildsysdep/neobuild.o"
 
@@ -95,9 +58,8 @@ if [ ! -f "$NEOBUILD_OBJ" ] || [ "$NEOBUILD_SRC" -nt "$NEOBUILD_OBJ" ]; then
     fi
 fi
 
-# compile the provided .c file
 echo "compiling $SOURCE_FILE"
-$CC "$SOURCE_FILE" "$STRIX_OBJ" "$DYNARR_OBJ" "$NEOBUILD_OBJ" -o "$OUTPUT_FILE" -lm -O3 -march=native
+$CC "$SOURCE_FILE" "$NEOBUILD_OBJ" -o "$OUTPUT_FILE" -lm -O3 -march=native
 
 if [ $? -eq 0 ]; then
     echo "compilation successful: $OUTPUT_FILE"
